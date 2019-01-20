@@ -5,6 +5,11 @@ const bcrypt=require('bcryptjs');
 const jwt=require('jsonwebtoken');
 const keys=require('../../config/keys')
 const passport=require('passport');
+
+//Load Input Validation
+const validateRegisterInput=require('../../validation/register');
+const validateLoginInput=require('../../validation/login');
+
 //Load User Modal
 const User=require('../../models/User');
 
@@ -24,11 +29,16 @@ router.get('/test',(req,res)=>res.json({msg:"users works"}));
 //@access Public
 router.post('/register',(req,res)=>{
    
-    
+    const {errors,isValid}=validateRegisterInput(req.body);
+    //check validation
+    if(!isValid){
+        return res.status(400).json(errors);
+    }
     User.findOne({email:req.body.email})
     .then(user=>{
         if(user){
-            return res.status(400).json({email:"Email already exists"});
+            errors.email='Email already exists';
+            return res.status(400).json(errors);
         }else{
             
             const avatar=gravatar.url(req.body.email,{
@@ -62,6 +72,14 @@ router.post('/register',(req,res)=>{
 //@access Public
 
 router.post('/login',(req,res)=>{
+
+    
+    const {errors,isValid}=validateLoginInput(req.body);
+    //check validation
+    if(!isValid){
+        return res.status(400).json(errors);
+    }
+
     const email=req.body.email;
     const password=req.body.password;
 
@@ -69,7 +87,8 @@ router.post('/login',(req,res)=>{
     User.findOne({email}).then(user=>{
         //check for user
         if(!user){
-            return res.status(404).json({email:"user not found"});
+            errors.email='user not found'
+            return res.status(404).json(errors);
             
         }
         //check password
@@ -89,7 +108,8 @@ router.post('/login',(req,res)=>{
                     })
                 });
             }else{
-                return res.status(400).json({password:'password incorrect'});
+                errors.password='password incorect';
+                return res.status(400).json(errors);
             }
         })
     });
