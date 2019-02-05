@@ -7,8 +7,6 @@ const passport=require('passport');
 const Post=require('../../models/Post');
 
 
-//Profile model
-const Post=require('../../models/Profile');
 
 //validation
 const validatePostInput=require('../../validation/post');
@@ -146,4 +144,63 @@ router.post('/unlike/:id',passport.authenticate('jwt',{session:false}),(req,res)
 })
 }
 );
+
+
+//@route delete api/posts/comment/:id
+//@desc add comment to post
+//@access Private
+
+router.post('/comment/:id',passport.authenticate('jwt',{session:false}),(req,res)=>{
+
+    const {errors,isValid}=validatePostInput(req.body);
+    //check validation
+    if(!isValid){
+        //if any error then send 400 with errors
+        return res.status(400).json(errors);
+
+    }
+
+    Post.findById(req.params.id)
+    .then(post=>{
+        const newComment={
+            text:req.body.text,
+            name:req.body.name,
+            avatar:req.body.avatar,
+            user:req.body.id
+        }
+        //add to comments array
+        post.comments.unshift(newComment);
+
+        //save
+        post.save().then(post=>res.json(post))
+    })
+    .catch(err=>res.status(404).json({postnotfound:'no post found'}));
+})
+
+
+//@route delete api/posts/comment/:id/:comment_id
+//@desc Remove comment to post
+//@access Private
+
+router.delete('/comment/:id/:comment_id',passport.authenticate('jwt',{session:false}),(req,res)=>{
+
+
+    Post.findById(req.params.id)
+    .then(post=>{
+        //check if the comment exists
+        if(post.commects.filter(comment=>comment._id.toString()===req.params.comment_id).length===0){
+            return res.status(404).json({commentnotexists:'comment does not exists'});
+        }
+        //get remove index
+        const removeIndex=post.comments
+        .map(item=>item._id.toString())
+        .indexOf(req.params.comment_id);
+
+        //splice it from array
+        post.save().then(post=>res.json(post));
+    })
+    .catch(err=>res.status(404).json({postnotfound:'no post found'}));
+})
+
+
 module.exports=router;
